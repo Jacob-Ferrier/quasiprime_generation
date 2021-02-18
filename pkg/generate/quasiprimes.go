@@ -15,12 +15,16 @@ type quasiprime struct {
 	moduloResult int
 }
 
+type moduloData struct {
+	quantity   int
+	percentage float64
+}
+
 // QuasiprimeList structure
 type QuasiprimeList struct {
 	quasiprimes         map[int]quasiprime
 	primes              map[int]int
 	modulo              int
-	moduloResultOptions []int
 	outFileName         string
 	minIntegerChecked   int
 	maxIntegerChecked   int
@@ -28,13 +32,13 @@ type QuasiprimeList struct {
 	minQuasiprime       int
 	maxQuasiprime       int
 	numQuasiprimes      int
+	moduloDataList      map[int]moduloData
 }
 
 func (quasiprimeList *QuasiprimeList) print() {
 	fmt.Printf("Quasiprime List\n#######################\n")
 	fmt.Printf("Primes used: %v\n", quasiprimeList.primes)
 	fmt.Printf("Modulo: %v\n", quasiprimeList.modulo)
-	fmt.Printf("Modulo Result Options: %v\n", quasiprimeList.moduloResultOptions)
 	fmt.Printf("Out File Name: %v\n", quasiprimeList.outFileName)
 	fmt.Printf("Minimum Integer Checked: %v\n", quasiprimeList.minIntegerChecked)
 	fmt.Printf("Maximum Integer Checked: %v\n", quasiprimeList.maxIntegerChecked)
@@ -43,6 +47,7 @@ func (quasiprimeList *QuasiprimeList) print() {
 	fmt.Printf("Maximum Quasiprime: %v\n", quasiprimeList.maxQuasiprime)
 	fmt.Printf("Number of Quasiprimes Generated: %v\n", quasiprimeList.numQuasiprimes)
 	fmt.Printf("Quasiprimes generated: %v\n", quasiprimeList.quasiprimes)
+	fmt.Printf("Modulo Data: %v\n", quasiprimeList.moduloDataList)
 	fmt.Printf("\n")
 }
 
@@ -61,15 +66,68 @@ func (quasiprimeList *QuasiprimeList) getPrimeList(masterPrimeList map[int]int) 
 }
 
 func (quasiprimeList *QuasiprimeList) generate() {
-	//quasiprimes := make(map[int]quasiprime)
+	quasiprimes := make(map[int]quasiprime)
 
 	for candidate := quasiprimeList.minIntegerChecked; candidate <= quasiprimeList.maxIntegerChecked; candidate++ {
-		fmt.Println(candidate)
+		if isQuasiprime(candidate, quasiprimeList.primes) {
+			quasiprimes[len(quasiprimes)] = quasiprime{candidate, candidate % quasiprimeList.modulo}
+		}
 	}
 
+	quasiprimeList.quasiprimes = quasiprimes
+	quasiprimeList.numQuasiprimes = len(quasiprimes)
+	quasiprimeList.minQuasiprime = quasiprimes[0].number
+	quasiprimeList.maxQuasiprime = quasiprimes[len(quasiprimes)-1].number
+
+	for r := range quasiprimeList.moduloDataList {
+		quantity := 0
+		for _, quasiprime := range quasiprimes {
+			if quasiprime.moduloResult == r {
+				quantity++
+			}
+		}
+		percentage := float64(quantity) / float64(quasiprimeList.numQuasiprimes)
+
+		quasiprimeList.moduloDataList[r] = moduloData{quantity, percentage}
+	}
 }
 
 func (quasiprimeList *QuasiprimeList) writeToFile() {
+	f, err := os.Create(quasiprimeList.outFileName)
+	check(err)
+
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+
+	_, err = w.WriteString(fmt.Sprintf("#Primes used: %v\n", quasiprimeList.primes))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("#Modulo: %v\n", quasiprimeList.modulo))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("#Out File Name: %v\n", quasiprimeList.outFileName))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("#Minimum Integer Checked: %v\n", quasiprimeList.minIntegerChecked))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("#Maximum Integer Checked: %v\n", quasiprimeList.maxIntegerChecked))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("#Number of Integers Checked: %v\n", quasiprimeList.numIntergersChecked))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("#Minimum Quasiprime: %v\n", quasiprimeList.minQuasiprime))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("#Maximum Quasiprime: %v\n", quasiprimeList.maxQuasiprime))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("#Number of Quasiprimes Generated: %v\n", quasiprimeList.numQuasiprimes))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("#Modulo Data: %v\n", quasiprimeList.moduloDataList))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("Quasiprime\tModulo Result\n"))
+	check(err)
+	for i := 0; i < len(quasiprimeList.quasiprimes); i++ {
+		_, err = w.WriteString(fmt.Sprintf("%v\t%v\n", quasiprimeList.quasiprimes[i].number, quasiprimeList.quasiprimes[i].moduloResult))
+		check(err)
+	}
+
+	w.Flush()
 }
 
 func worker(id int, quasiprimeList QuasiprimeList, wg *sync.WaitGroup) {
@@ -82,7 +140,7 @@ func worker(id int, quasiprimeList QuasiprimeList, wg *sync.WaitGroup) {
 }
 
 // Quasiprimes main generation function, generate quasiprimes up to maxNumberToGen with listSizeCaps
-func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, moduloResultOptions []int, primeSourceFile string, outputDir string) {
+func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFile string, outputDir string) {
 	numLists := int(math.Ceil(float64(maxNumberToGen) / float64(listSizeCap)))
 	if numLists == maxNumberToGen/listSizeCap {
 		numLists++
@@ -101,14 +159,20 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, moduloResultOp
 
 		quasiprimeList.minIntegerChecked = i * listSizeCap
 		quasiprimeList.numIntergersChecked = quasiprimeList.maxIntegerChecked - quasiprimeList.minIntegerChecked + 1
-		quasiprimeList.outFileName = fmt.Sprintf("%s/quasiprimes.part.%016d.txt", outputDir, i)
+		quasiprimeList.outFileName = fmt.Sprintf("%s/quasiprimes.modulo%v.part.%016d.txt", outputDir, modulo, i)
 		quasiprimeList.modulo = modulo
-		quasiprimeList.moduloResultOptions = moduloResultOptions
+
+		moduloDataList := make(map[int]moduloData, modulo)
+		for p := 0; p < modulo; p++ {
+			moduloDataList[p] = moduloData{}
+		}
+		quasiprimeList.moduloDataList = moduloDataList
 
 		lists[i] = quasiprimeList
 	}
 
 	// Preload prime list into memory
+	fmt.Println("Preloading prime list")
 	file, err := os.Open(primeSourceFile)
 	if err != nil {
 		fmt.Println(err)
@@ -134,20 +198,24 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, moduloResultOp
 			}
 		}
 	}
+	fmt.Println("Prime list preload done")
 
+	fmt.Println("Computing individual prime lists")
 	for l := 0; l < len(lists); l++ {
 		quasiprimeListToOperate := lists[l]
 		quasiprimeListToOperate.getPrimeList(masterPrimeList)
-		quasiprimeListToOperate.generate()
+		lists[l] = quasiprimeListToOperate
+	}
+	fmt.Println("Done computing individual prime lists")
+
+	var wg sync.WaitGroup
+
+	for j := 0; j < len(lists); j++ {
+		wg.Add(1)
+		go worker(j, lists[j], &wg)
 	}
 
-	//var wg sync.WaitGroup
+	wg.Wait()
 
-	//for j := 0; j < len(lists); j++ {
-	//	wg.Add(1)
-	//	go worker(j, lists[j], &wg)
-	//}
-
-	//wg.Wait()
-
+	fmt.Println("All workers reported completion")
 }
