@@ -1,9 +1,22 @@
 package main
 
-import "github.com/Jacob-Ferrier/quasiprime_generation/pkg/generate"
+import (
+	"flag"
+
+	"github.com/Jacob-Ferrier/quasiprime_generation/pkg/generate"
+)
 
 func main() {
-	generate.Quasiprimes(1000, 100, 8,
-		"/home/jacobferrier/Desktop/prime_computations_test/data/in/primes/combined/2T_combined.txt",
-		"/home/jacobferrier/Desktop/quasiprime_generation_test")
+	// flag defitions
+	var maxNumberToGenFlag = flag.Int("maxNumberToGen", 100, "maximum number (not quantity) to generate up to")
+	var listSizeCapFlag = flag.Int("listSizeCap", 101, "maximum size of a quasiprime list, set listSizeCap to maxNumberToGen+1 for a single list")
+	var moduloFlag = flag.Int("modulo", 4, "number to modulate by")
+	var primeSourceFileFlag = flag.String("primeSourceFile", "", "full path to the prime source file")
+	var outputDirFlag = flag.String("outputDir", "", "full path to output dir")
+
+	// parse command line flags
+	flag.Parse()
+
+	// main runtime
+	generate.Quasiprimes(*maxNumberToGenFlag, *listSizeCapFlag, *moduloFlag, *primeSourceFileFlag, *outputDirFlag)
 }
