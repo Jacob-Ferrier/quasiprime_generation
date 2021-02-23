@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type quasiprime struct {
@@ -22,17 +23,18 @@ type moduloData struct {
 
 // QuasiprimeList structure
 type QuasiprimeList struct {
-	quasiprimes         map[int]quasiprime
-	primes              map[int]int
-	modulo              int
-	outFileName         string
-	minIntegerChecked   int
-	maxIntegerChecked   int
-	numIntergersChecked int
-	minQuasiprime       int
-	maxQuasiprime       int
-	numQuasiprimes      int
-	moduloDataList      map[int]moduloData
+	quasiprimes              map[int]quasiprime
+	primes                   map[int]int
+	modulo                   int
+	outFileName              string
+	minIntegerChecked        int
+	maxIntegerChecked        int
+	numIntergersChecked      int
+	minQuasiprime            int
+	maxQuasiprime            int
+	numQuasiprimes           int
+	moduloDataList           map[int]moduloData
+	quasiprimeGenerationTime time.Duration
 }
 
 func (quasiprimeList *QuasiprimeList) print() {
@@ -48,6 +50,7 @@ func (quasiprimeList *QuasiprimeList) print() {
 	fmt.Printf("Number of Quasiprimes Generated: %v\n", quasiprimeList.numQuasiprimes)
 	fmt.Printf("Quasiprimes generated: %v\n", quasiprimeList.quasiprimes)
 	fmt.Printf("Modulo Data: %v\n", quasiprimeList.moduloDataList)
+	fmt.Printf("Quasiprime Generation Time: %v\n", quasiprimeList.quasiprimeGenerationTime)
 	fmt.Printf("\n")
 }
 
@@ -68,11 +71,13 @@ func (quasiprimeList *QuasiprimeList) getPrimeList(masterPrimeList map[int]int) 
 func (quasiprimeList *QuasiprimeList) generate() {
 	quasiprimes := make(map[int]quasiprime)
 
+	start := time.Now()
 	for candidate := quasiprimeList.minIntegerChecked; candidate <= quasiprimeList.maxIntegerChecked; candidate++ {
 		if isQuasiprime(candidate, quasiprimeList.primes) {
 			quasiprimes[len(quasiprimes)] = quasiprime{candidate, candidate % quasiprimeList.modulo}
 		}
 	}
+	quasiprimeList.quasiprimeGenerationTime = time.Since(start)
 
 	quasiprimeList.quasiprimes = quasiprimes
 	quasiprimeList.numQuasiprimes = len(quasiprimes)
@@ -121,6 +126,8 @@ func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool) {
 	_, err = w.WriteString(fmt.Sprintf("#Number of Quasiprimes Generated: %v\n", quasiprimeList.numQuasiprimes))
 	check(err)
 	_, err = w.WriteString(fmt.Sprintf("#Modulo Data: %v\n", quasiprimeList.moduloDataList))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("#Quasiprime Generation Time: %v\n", quasiprimeList.quasiprimeGenerationTime))
 	check(err)
 	_, err = w.WriteString(fmt.Sprintf("Quasiprime\tModulo Result\n"))
 	check(err)
