@@ -139,13 +139,14 @@ func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool) {
 	w.Flush()
 }
 
-func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, wg *sync.WaitGroup) {
+func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, c chan map[int]moduloData, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	fmt.Printf("Worker %d starting\n", id)
 	quasiprimeList.generate()
 	quasiprimeList.writeToFile(writePrime)
 	fmt.Printf("Worker %d done\n", id)
+	c <- quasiprimeList.moduloDataList
 }
 
 // Quasiprimes main generation function, generate quasiprimes up to maxNumberToGen with listSizeCaps
@@ -219,12 +220,51 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 
 	var wg sync.WaitGroup
 
+	c := make(chan map[int]moduloData, len(lists))
 	for j := 0; j < len(lists); j++ {
 		wg.Add(1)
-		go worker(j, lists[j], writePrime, &wg)
+		go worker(j, lists[j], writePrime, c, &wg)
 	}
 
 	wg.Wait()
-
 	fmt.Println("All workers reported completion")
+	close(c)
+
+	// Generate report
+	var completeQuasiprimeList QuasiprimeList
+
+	completeModuloDataList := make(map[int]moduloData)
+	for p := 0; p < modulo; p++ {
+		completeModuloDataList[p] = moduloData{0, 0.0}
+	}
+
+	completeNumQuasiprimes := 0
+	for u := range c {
+		fmt.Println(u)
+		for r := 0; r < len(completeModuloDataList); r++ {
+			completeModuloDataList[r] = moduloData{completeModuloDataList[r].quantity + u[r].quantity, 0}
+			completeNumQuasiprimes += u[r].quantity
+		}
+	}
+
+	completeQuasiprimeList.modulo = modulo
+	completeQuasiprimeList.outFileName = fmt.Sprintf("%s/quasiprimes.modulo%v.complete_report.txt", outputDir, modulo)
+	completeQuasiprimeList.minIntegerChecked = 0
+	completeQuasiprimeList.maxIntegerChecked = maxNumberToGen
+	completeQuasiprimeList.numIntergersChecked = maxNumberToGen + 1
+	//completeQuasiprimeList.minQuasiprime =
+	//completeQuasiprimeList.maxQuasiprime =
+	completeQuasiprimeList.numQuasiprimes = completeNumQuasiprimes
+
+	for y := 0; y < len(completeModuloDataList); y++ {
+		percentage := float64(completeModuloDataList[y].quantity) / float64(completeQuasiprimeList.numQuasiprimes)
+		completeModuloDataList[y] = moduloData{completeModuloDataList[y].quantity, percentage}
+	}
+
+	completeQuasiprimeList.moduloDataList = completeModuloDataList
+
+	fmt.Println(completeQuasiprimeList.moduloDataList)
+
+	completeQuasiprimeList.writeToFile(false)
+
 }
