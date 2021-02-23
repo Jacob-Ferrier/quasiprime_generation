@@ -13,10 +13,11 @@ func main() {
 	var moduloFlag = flag.Int("modulo", 4, "number to modulate by")
 	var primeSourceFileFlag = flag.String("primeSourceFile", "", "full path to the prime source file")
 	var outputDirFlag = flag.String("outputDir", "", "full path to output dir")
+	var writePrimeFlag = flag.Bool("writePrime", false, "write primes used during computation to output files")
 
 	// parse command line flags
 	flag.Parse()
 
 	// main runtime
-	generate.Quasiprimes(*maxNumberToGenFlag, *listSizeCapFlag, *moduloFlag, *primeSourceFileFlag, *outputDirFlag)
+	generate.Quasiprimes(*maxNumberToGenFlag, *listSizeCapFlag, *moduloFlag, *primeSourceFileFlag, *outputDirFlag, *writePrimeFlag)
 }

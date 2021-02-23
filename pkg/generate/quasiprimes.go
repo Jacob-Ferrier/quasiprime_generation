@@ -92,7 +92,7 @@ func (quasiprimeList *QuasiprimeList) generate() {
 	}
 }
 
-func (quasiprimeList *QuasiprimeList) writeToFile() {
+func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool) {
 	f, err := os.Create(quasiprimeList.outFileName)
 	check(err)
 
@@ -100,8 +100,10 @@ func (quasiprimeList *QuasiprimeList) writeToFile() {
 
 	w := bufio.NewWriter(f)
 
-	_, err = w.WriteString(fmt.Sprintf("#Primes used: %v\n", quasiprimeList.primes))
-	check(err)
+	if writePrime {
+		_, err = w.WriteString(fmt.Sprintf("#Primes used: %v\n", quasiprimeList.primes))
+		check(err)
+	}
 	_, err = w.WriteString(fmt.Sprintf("#Modulo: %v\n", quasiprimeList.modulo))
 	check(err)
 	_, err = w.WriteString(fmt.Sprintf("#Out File Name: %v\n", quasiprimeList.outFileName))
@@ -130,17 +132,17 @@ func (quasiprimeList *QuasiprimeList) writeToFile() {
 	w.Flush()
 }
 
-func worker(id int, quasiprimeList QuasiprimeList, wg *sync.WaitGroup) {
+func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	fmt.Printf("Worker %d starting\n", id)
 	quasiprimeList.generate()
-	quasiprimeList.writeToFile()
+	quasiprimeList.writeToFile(writePrime)
 	fmt.Printf("Worker %d done\n", id)
 }
 
 // Quasiprimes main generation function, generate quasiprimes up to maxNumberToGen with listSizeCaps
-func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFile string, outputDir string) {
+func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFile string, outputDir string, writePrime bool) {
 	numLists := int(math.Ceil(float64(maxNumberToGen) / float64(listSizeCap)))
 	if numLists == maxNumberToGen/listSizeCap {
 		numLists++
@@ -212,7 +214,7 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 
 	for j := 0; j < len(lists); j++ {
 		wg.Add(1)
-		go worker(j, lists[j], &wg)
+		go worker(j, lists[j], writePrime, &wg)
 	}
 
 	wg.Wait()
