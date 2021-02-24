@@ -116,7 +116,7 @@ func (quasiprimeList *QuasiprimeList) generate() {
 	}
 }
 
-func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool) {
+func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool, complete bool) {
 	f, err := os.Create(quasiprimeList.outFileName)
 	check(err)
 
@@ -155,13 +155,15 @@ func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool) {
 		check(err)
 	}
 
-	_, err = w.WriteString(fmt.Sprintf("\nPaired Modulo Result\tQuantity\tPercentage\n"))
-	check(err)
-	for a := 0; a < len(quasiprimeList.pairedModuloDataList); a++ {
-		for b := 0; b < len(quasiprimeList.pairedModuloDataList[a]); b++ {
-			_, err = w.WriteString(fmt.Sprintf("(%v,%v)\t%v\t%v\n", a, b,
-				quasiprimeList.pairedModuloDataList[a][b].quantity, quasiprimeList.pairedModuloDataList[a][b].percentage))
-			check(err)
+	if complete {
+		_, err = w.WriteString(fmt.Sprintf("\nPaired Modulo Result\tQuantity\tPercentage\n"))
+		check(err)
+		for a := 0; a < len(quasiprimeList.pairedModuloDataList); a++ {
+			for b := 0; b < len(quasiprimeList.pairedModuloDataList[a]); b++ {
+				_, err = w.WriteString(fmt.Sprintf("(%v,%v)\t%v\t%v\n", a, b,
+					quasiprimeList.pairedModuloDataList[a][b].quantity, quasiprimeList.pairedModuloDataList[a][b].percentage))
+				check(err)
+			}
 		}
 	}
 
@@ -175,14 +177,15 @@ func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool) {
 	w.Flush()
 }
 
-func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, c chan map[int]moduloData, wg *sync.WaitGroup) {
+func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, singleC chan map[int]moduloData, quasiprimeC chan map[int]quasiprime, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	fmt.Printf("Worker %d starting\n", id)
 	quasiprimeList.generate()
-	quasiprimeList.writeToFile(writePrime)
+	quasiprimeList.writeToFile(writePrime, false)
 	fmt.Printf("Worker %d done\n", id)
-	c <- quasiprimeList.moduloDataList
+	singleC <- quasiprimeList.moduloDataList
+	quasiprimeC <- quasiprimeList.quasiprimes
 }
 
 // Quasiprimes main generation function, generate quasiprimes up to maxNumberToGen with listSizeCaps
@@ -265,31 +268,53 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 
 	var wg sync.WaitGroup
 
-	c := make(chan map[int]moduloData, len(lists))
+	singleC := make(chan map[int]moduloData, len(lists))
+	quasiprimeC := make(chan map[int]quasiprime, len(lists))
 	for j := 0; j < len(lists); j++ {
 		wg.Add(1)
-		go worker(j, lists[j], writePrime, c, &wg)
+		go worker(j, lists[j], writePrime, singleC, quasiprimeC, &wg)
 	}
 
 	wg.Wait()
 	fmt.Println("All workers reported completion")
-	close(c)
+	close(singleC)
+	close(quasiprimeC)
 
 	// Generate report
 	var completeQuasiprimeList QuasiprimeList
 
-	completeModuloDataList := make(map[int]moduloData)
+	completeModuloDataList := make(map[int]moduloData, modulo)
 	for p := 0; p < modulo; p++ {
 		completeModuloDataList[p] = moduloData{0, 0.0}
 	}
 
 	completeNumQuasiprimes := 0
-	for u := range c {
+	for u := range singleC {
+		fmt.Println("collecting single", u)
 		for r := 0; r < len(completeModuloDataList); r++ {
-			completeModuloDataList[r] = moduloData{completeModuloDataList[r].quantity + u[r].quantity, 0}
+			completeModuloDataList[r] = moduloData{completeModuloDataList[r].quantity + u[r].quantity, 0.0}
 			completeNumQuasiprimes += u[r].quantity
 		}
 	}
+
+	//completePairedModuloDataList := make(map[int]map[int]moduloData, modulo)
+	//for a := 0; a < modulo; a++ {
+	//		completePairedModuloDataList[a] = make(map[int]moduloData, modulo)
+	//		for b := 0; b < modulo; b++ {
+	//			completePairedModuloDataList[a][b] = moduloData{0, 0.0}
+	//		}
+	//	}
+	//
+	//	completeNumPairs := 0
+	//	for u := range pairC {
+	//		fmt.Println("collecting pair", u)
+	//		for a := 0; a < len(completePairedModuloDataList); a++ {
+	//			for b := 0; b < len(completePairedModuloDataList[a]); b++ {
+	//				completePairedModuloDataList[a][b] = moduloData{completePairedModuloDataList[a][b].quantity + u[a][b].quantity, 0.0}
+	//				completeNumPairs += u[a][b].quantity
+	//			}
+	//		}
+	//	}
 
 	completeQuasiprimeList.modulo = modulo
 	completeQuasiprimeList.outFileName = fmt.Sprintf("%s/quasiprimes.modulo%v.complete_report.txt", outputDir, modulo)
@@ -307,7 +332,89 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 
 	completeQuasiprimeList.moduloDataList = completeModuloDataList
 
-	completeQuasiprimeList.writeToFile(false)
+	coll := make(map[int]map[int]quasiprime, len(quasiprimeC))
+	mins := make(map[int]int, len(quasiprimeC))
+	order := make(map[int]int, len(quasiprimeC))
+	i := 0
+	for u := range quasiprimeC {
+		coll[i] = u
+		mins[i] = u[0].number
+		order[i] = i
+		i++
+		fmt.Println(u)
+		fmt.Printf("\n")
+	}
+
+	fmt.Println(coll)
+	fmt.Println(mins)
+	fmt.Println(order)
+
+	for j := 0; j < len(order)-1; j++ {
+		swapped := false
+		for k := 0; k < len(order)-1; k++ {
+			if mins[order[k]] > mins[order[k+1]] {
+				temp := order[k]
+				order[k] = order[k+1]
+				order[k+1] = temp
+				swapped = true
+			}
+		}
+
+		if !swapped {
+			break
+		}
+	}
+
+	fmt.Println(order)
+
+	completeQuasiprimes := make(map[int]quasiprime, completeQuasiprimeList.numQuasiprimes)
+	k := 0
+	for i := 0; i < len(order); i++ {
+		for j := 0; j < len(coll[order[i]]); j++ {
+			completeQuasiprimes[k] = coll[order[i]][j]
+			k++
+		}
+	}
+
+	fmt.Println(completeQuasiprimes)
+	completeQuasiprimeList.quasiprimes = completeQuasiprimes
+
+	completePairedModuloDataList := make(map[int]map[int]moduloData, completeQuasiprimeList.modulo)
+	for a := 0; a < modulo; a++ {
+		completePairedModuloDataList[a] = make(map[int]moduloData, completeQuasiprimeList.modulo)
+		for b := 0; b < modulo; b++ {
+			completePairedModuloDataList[a][b] = moduloData{}
+		}
+	}
+	completeQuasiprimeList.pairedModuloDataList = completePairedModuloDataList
+
+	totalPairs := 0
+	for i := 0; i < len(completeQuasiprimeList.quasiprimes)-1; i++ {
+		q, n := completeQuasiprimeList.quasiprimes[i], completeQuasiprimeList.quasiprimes[i+1]
+
+		completeQuasiprimeList.pairedModuloDataList[q.moduloResult][n.moduloResult] =
+			moduloData{completeQuasiprimeList.pairedModuloDataList[q.moduloResult][n.moduloResult].quantity + 1, 0.0}
+
+		totalPairs++
+	}
+
+	for a := 0; a < len(completeQuasiprimeList.pairedModuloDataList); a++ {
+		for b := 0; b < len(completeQuasiprimeList.pairedModuloDataList[a]); b++ {
+			completeQuasiprimeList.pairedModuloDataList[a][b] = moduloData{completeQuasiprimeList.pairedModuloDataList[a][b].quantity,
+				float64(completeQuasiprimeList.pairedModuloDataList[a][b].quantity) / float64(totalPairs)}
+		}
+	}
+
+	//for a := 0; a < len(completePairedModuloDataList); a++ {
+	//	for b := 0; b < len(completePairedModuloDataList[a]); b++ {
+	//		percentage := float64(completePairedModuloDataList[a][b].quantity) / float64(completeNumPairs)
+	//		completePairedModuloDataList[a][b] = moduloData{completePairedModuloDataList[a][b].quantity, percentage}
+	//	}
+	//}
+	//
+	//	completeQuasiprimeList.pairedModuloDataList = completePairedModuloDataList
+
+	completeQuasiprimeList.writeToFile(false, true)
 
 	fmt.Println("All done")
 
