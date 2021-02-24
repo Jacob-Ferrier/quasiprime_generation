@@ -297,25 +297,6 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 		}
 	}
 
-	//completePairedModuloDataList := make(map[int]map[int]moduloData, modulo)
-	//for a := 0; a < modulo; a++ {
-	//		completePairedModuloDataList[a] = make(map[int]moduloData, modulo)
-	//		for b := 0; b < modulo; b++ {
-	//			completePairedModuloDataList[a][b] = moduloData{0, 0.0}
-	//		}
-	//	}
-	//
-	//	completeNumPairs := 0
-	//	for u := range pairC {
-	//		fmt.Println("collecting pair", u)
-	//		for a := 0; a < len(completePairedModuloDataList); a++ {
-	//			for b := 0; b < len(completePairedModuloDataList[a]); b++ {
-	//				completePairedModuloDataList[a][b] = moduloData{completePairedModuloDataList[a][b].quantity + u[a][b].quantity, 0.0}
-	//				completeNumPairs += u[a][b].quantity
-	//			}
-	//		}
-	//	}
-
 	completeQuasiprimeList.modulo = modulo
 	completeQuasiprimeList.outFileName = fmt.Sprintf("%s/quasiprimes.modulo%v.complete_report.txt", outputDir, modulo)
 	completeQuasiprimeList.minIntegerChecked = 0
@@ -404,15 +385,6 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 				float64(completeQuasiprimeList.pairedModuloDataList[a][b].quantity) / float64(totalPairs)}
 		}
 	}
-
-	//for a := 0; a < len(completePairedModuloDataList); a++ {
-	//	for b := 0; b < len(completePairedModuloDataList[a]); b++ {
-	//		percentage := float64(completePairedModuloDataList[a][b].quantity) / float64(completeNumPairs)
-	//		completePairedModuloDataList[a][b] = moduloData{completePairedModuloDataList[a][b].quantity, percentage}
-	//	}
-	//}
-	//
-	//	completeQuasiprimeList.pairedModuloDataList = completePairedModuloDataList
 
 	completeQuasiprimeList.writeToFile(false, true)
 
