@@ -34,6 +34,7 @@ type QuasiprimeList struct {
 	maxQuasiprime            int
 	numQuasiprimes           int
 	moduloDataList           map[int]moduloData
+	pairedModuloDataList     map[int]map[int]moduloData
 	quasiprimeGenerationTime time.Duration
 }
 
@@ -49,8 +50,9 @@ func (quasiprimeList *QuasiprimeList) print() {
 	fmt.Printf("Maximum Quasiprime: %v\n", quasiprimeList.maxQuasiprime)
 	fmt.Printf("Number of Quasiprimes Generated: %v\n", quasiprimeList.numQuasiprimes)
 	fmt.Printf("Quasiprimes generated: %v\n", quasiprimeList.quasiprimes)
-	fmt.Printf("Modulo Data: %v\n", quasiprimeList.moduloDataList)
 	fmt.Printf("Quasiprime Generation Time: %v\n", quasiprimeList.quasiprimeGenerationTime)
+	fmt.Printf("Modulo Data: %v\n", quasiprimeList.moduloDataList)
+	fmt.Printf("Paired Modulo Data: %v\n", quasiprimeList.pairedModuloDataList)
 	fmt.Printf("\n")
 }
 
@@ -95,6 +97,23 @@ func (quasiprimeList *QuasiprimeList) generate() {
 
 		quasiprimeList.moduloDataList[r] = moduloData{quantity, percentage}
 	}
+
+	totalPairs := 0
+	for i := 0; i < len(quasiprimeList.quasiprimes)-1; i++ {
+		q, n := quasiprimeList.quasiprimes[i], quasiprimeList.quasiprimes[i+1]
+
+		quasiprimeList.pairedModuloDataList[q.moduloResult][n.moduloResult] =
+			moduloData{quasiprimeList.pairedModuloDataList[q.moduloResult][n.moduloResult].quantity + 1, 0.0}
+
+		totalPairs++
+	}
+
+	for a := 0; a < len(quasiprimeList.pairedModuloDataList); a++ {
+		for b := 0; b < len(quasiprimeList.pairedModuloDataList[a]); b++ {
+			quasiprimeList.pairedModuloDataList[a][b] = moduloData{quasiprimeList.pairedModuloDataList[a][b].quantity,
+				float64(quasiprimeList.pairedModuloDataList[a][b].quantity) / float64(totalPairs)}
+		}
+	}
 }
 
 func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool) {
@@ -125,11 +144,28 @@ func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool) {
 	check(err)
 	_, err = w.WriteString(fmt.Sprintf("#Number of Quasiprimes Generated: %v\n", quasiprimeList.numQuasiprimes))
 	check(err)
-	_, err = w.WriteString(fmt.Sprintf("#Modulo Data: %v\n", quasiprimeList.moduloDataList))
-	check(err)
 	_, err = w.WriteString(fmt.Sprintf("#Quasiprime Generation Time: %v\n", quasiprimeList.quasiprimeGenerationTime))
 	check(err)
-	_, err = w.WriteString(fmt.Sprintf("Quasiprime\tModulo Result\n"))
+
+	_, err = w.WriteString(fmt.Sprintf("\nModulo Result\tQuantitiy\tPercentage\n"))
+	check(err)
+	for i := 0; i < len(quasiprimeList.moduloDataList); i++ {
+		_, err = w.WriteString(fmt.Sprintf("%v\t%v\t%v\n", i,
+			quasiprimeList.moduloDataList[i].quantity, quasiprimeList.moduloDataList[i].percentage))
+		check(err)
+	}
+
+	_, err = w.WriteString(fmt.Sprintf("\nPaired Modulo Result\tQuantity\tPercentage\n"))
+	check(err)
+	for a := 0; a < len(quasiprimeList.pairedModuloDataList); a++ {
+		for b := 0; b < len(quasiprimeList.pairedModuloDataList[a]); b++ {
+			_, err = w.WriteString(fmt.Sprintf("(%v,%v)\t%v\t%v\n", a, b,
+				quasiprimeList.pairedModuloDataList[a][b].quantity, quasiprimeList.pairedModuloDataList[a][b].percentage))
+			check(err)
+		}
+	}
+
+	_, err = w.WriteString(fmt.Sprintf("\nQuasiprime\tModulo Result\n"))
 	check(err)
 	for i := 0; i < len(quasiprimeList.quasiprimes); i++ {
 		_, err = w.WriteString(fmt.Sprintf("%v\t%v\n", quasiprimeList.quasiprimes[i].number, quasiprimeList.quasiprimes[i].moduloResult))
@@ -177,6 +213,15 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 			moduloDataList[p] = moduloData{}
 		}
 		quasiprimeList.moduloDataList = moduloDataList
+
+		pairedModuloDataList := make(map[int]map[int]moduloData, modulo)
+		for a := 0; a < modulo; a++ {
+			pairedModuloDataList[a] = make(map[int]moduloData, modulo)
+			for b := 0; b < modulo; b++ {
+				pairedModuloDataList[a][b] = moduloData{}
+			}
+		}
+		quasiprimeList.pairedModuloDataList = pairedModuloDataList
 
 		lists[i] = quasiprimeList
 	}
@@ -240,7 +285,6 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 
 	completeNumQuasiprimes := 0
 	for u := range c {
-		fmt.Println(u)
 		for r := 0; r < len(completeModuloDataList); r++ {
 			completeModuloDataList[r] = moduloData{completeModuloDataList[r].quantity + u[r].quantity, 0}
 			completeNumQuasiprimes += u[r].quantity
@@ -263,8 +307,8 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 
 	completeQuasiprimeList.moduloDataList = completeModuloDataList
 
-	fmt.Println(completeQuasiprimeList.moduloDataList)
-
 	completeQuasiprimeList.writeToFile(false)
+
+	fmt.Println("All done")
 
 }
