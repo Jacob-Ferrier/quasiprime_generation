@@ -290,7 +290,6 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 
 	completeNumQuasiprimes := 0
 	for u := range singleC {
-		fmt.Println("collecting single", u)
 		for r := 0; r < len(completeModuloDataList); r++ {
 			completeModuloDataList[r] = moduloData{completeModuloDataList[r].quantity + u[r].quantity, 0.0}
 			completeNumQuasiprimes += u[r].quantity
@@ -322,13 +321,7 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 		mins[i] = u[0].number
 		order[i] = i
 		i++
-		fmt.Println(u)
-		fmt.Printf("\n")
 	}
-
-	fmt.Println(coll)
-	fmt.Println(mins)
-	fmt.Println(order)
 
 	for j := 0; j < len(order)-1; j++ {
 		swapped := false
@@ -346,8 +339,6 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 		}
 	}
 
-	fmt.Println(order)
-
 	completeQuasiprimes := make(map[int]quasiprime, completeQuasiprimeList.numQuasiprimes)
 	k := 0
 	for i := 0; i < len(order); i++ {
@@ -357,7 +348,6 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 		}
 	}
 
-	fmt.Println(completeQuasiprimes)
 	completeQuasiprimeList.quasiprimes = completeQuasiprimes
 
 	completePairedModuloDataList := make(map[int]map[int]moduloData, completeQuasiprimeList.modulo)
@@ -389,5 +379,4 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 	completeQuasiprimeList.writeToFile(false, true)
 
 	fmt.Println("All done")
-
 }
