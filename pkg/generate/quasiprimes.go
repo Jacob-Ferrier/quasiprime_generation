@@ -16,6 +16,7 @@ type quasiprime struct {
 	moduloResult int
 }
 
+// Random change
 type moduloData struct {
 	quantity   int
 	percentage float64
