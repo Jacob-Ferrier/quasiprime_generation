@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -190,83 +188,28 @@ func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, singleC chan
 }
 
 // Quasiprimes main generation function, generate quasiprimes up to maxNumberToGen with listSizeCaps
-func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFile string, outputDir string, writePrime bool) {
-	numLists := int(math.Ceil(float64(maxNumberToGen) / float64(listSizeCap)))
-	if numLists == maxNumberToGen/listSizeCap {
-		numLists++
-	}
+func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, modulo int, primeSourceFile string, outputDir string, writePrime bool) {
+	// Initialize quasiprime lists
+	vPrint(v, 0, "Initializing quasiprime lists\n####################\n")
+	lists := makeIntitialLists(maxNumberToGen, listSizeCap, modulo, outputDir)
+	vPrint(v, 0, "####################\nDone\n\n")
 
-	lists := make(map[int]QuasiprimeList, numLists)
+	// Make master prime list
+	vPrint(v, 0, "Preloading prime list\n####################\n")
+	masterPrimeList := makeMasterPrimeList(maxNumberToGen, primeSourceFile)
+	vPrint(v, 0, "####################\nDone\n\n")
 
-	for i := 0; i < numLists; i++ {
-		var quasiprimeList QuasiprimeList
-
-		if ((i+1)*listSizeCap)-1 < maxNumberToGen {
-			quasiprimeList.maxIntegerChecked = ((i + 1) * listSizeCap) - 1
-		} else {
-			quasiprimeList.maxIntegerChecked = maxNumberToGen
-		}
-
-		quasiprimeList.minIntegerChecked = i * listSizeCap
-		quasiprimeList.numIntergersChecked = quasiprimeList.maxIntegerChecked - quasiprimeList.minIntegerChecked + 1
-		quasiprimeList.outFileName = fmt.Sprintf("%s/quasiprimes.modulo%v.part.%016d.txt", outputDir, modulo, i)
-		quasiprimeList.modulo = modulo
-
-		moduloDataList := make(map[int]moduloData, modulo)
-		for p := 0; p < modulo; p++ {
-			moduloDataList[p] = moduloData{}
-		}
-		quasiprimeList.moduloDataList = moduloDataList
-
-		pairedModuloDataList := make(map[int]map[int]moduloData, modulo)
-		for a := 0; a < modulo; a++ {
-			pairedModuloDataList[a] = make(map[int]moduloData, modulo)
-			for b := 0; b < modulo; b++ {
-				pairedModuloDataList[a][b] = moduloData{}
-			}
-		}
-		quasiprimeList.pairedModuloDataList = pairedModuloDataList
-
-		lists[i] = quasiprimeList
-	}
-
-	// Preload prime list into memory
-	fmt.Println("Preloading prime list")
-	file, err := os.Open(primeSourceFile)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-
-	masterPrimeList := make(map[int]int)
-	maxPrimeNeeded := int(math.Ceil(float64(maxNumberToGen)/float64(2))) + 1
-	stop := false
-	for scanner.Scan() && !stop {
-		line := scanner.Text()
-		lineSlice := strings.Split(line, "\t")
-		for _, k := range lineSlice {
-			value, _ := strconv.Atoi(k)
-			if value <= maxPrimeNeeded {
-				masterPrimeList[len(masterPrimeList)] = value
-			} else {
-				stop = true
-			}
-		}
-	}
-	fmt.Println("Prime list preload done")
-
-	fmt.Println("Computing individual prime lists")
+	// Make individual prime lists
+	vPrint(v, 0, "Computing individual prime lists\n####################\n")
 	for l := 0; l < len(lists); l++ {
 		quasiprimeListToOperate := lists[l]
 		quasiprimeListToOperate.getPrimeList(masterPrimeList)
 		lists[l] = quasiprimeListToOperate
 	}
-	fmt.Println("Done computing individual prime lists")
+	vPrint(v, 0, "####################\nDone\n\n")
 
+	// Perform distributed computations
+	vPrint(v, 0, "Distributing workloads to workers and deploying\n####################\n")
 	var wg sync.WaitGroup
 
 	singleC := make(chan map[int]moduloData, len(lists))
@@ -277,9 +220,11 @@ func Quasiprimes(maxNumberToGen int, listSizeCap int, modulo int, primeSourceFil
 	}
 
 	wg.Wait()
-	fmt.Println("All workers reported completion")
+	vPrint(v, 0, "All workers reported completion\n")
 	close(singleC)
 	close(quasiprimeC)
+	vPrint(v, 0, "All channels closed\n")
+	vPrint(v, 0, "####################\nDone\n\n")
 
 	// Generate report
 	var completeQuasiprimeList QuasiprimeList
