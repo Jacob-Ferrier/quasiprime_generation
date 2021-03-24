@@ -176,7 +176,7 @@ func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool, complete bool
 	w.Flush()
 }
 
-func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, singleC chan map[int]moduloData, quasiprimeC chan map[int]quasiprime, wg *sync.WaitGroup) {
+func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, singleC chan map[int]moduloData, quasiprimeC chan map[int]quasiprime, timeC chan time.Duration, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	fmt.Printf("Worker %d starting\n", id)
@@ -185,6 +185,7 @@ func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, singleC chan
 	fmt.Printf("Worker %d done\n", id)
 	singleC <- quasiprimeList.moduloDataList
 	quasiprimeC <- quasiprimeList.quasiprimes
+	timeC <- quasiprimeList.quasiprimeGenerationTime
 }
 
 // Quasiprimes main generation function, generate quasiprimes up to maxNumberToGen with listSizeCaps
@@ -214,19 +215,22 @@ func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, modulo int, primeSo
 
 	singleC := make(chan map[int]moduloData, len(lists))
 	quasiprimeC := make(chan map[int]quasiprime, len(lists))
+	timeC := make(chan time.Duration, len(lists))
 	for j := 0; j < len(lists); j++ {
 		wg.Add(1)
-		go worker(j, lists[j], writePrime, singleC, quasiprimeC, &wg)
+		go worker(j, lists[j], writePrime, singleC, quasiprimeC, timeC, &wg)
 	}
 
 	wg.Wait()
 	vPrint(v, 0, "All workers reported completion\n")
 	close(singleC)
 	close(quasiprimeC)
+	close(timeC)
 	vPrint(v, 0, "All channels closed\n")
 	vPrint(v, 0, "####################\nDone\n\n")
 
 	// Generate report
+	vPrint(v, 0, "Generating final report\n####################\n")
 	var completeQuasiprimeList QuasiprimeList
 
 	completeModuloDataList := make(map[int]moduloData, modulo)
@@ -242,14 +246,18 @@ func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, modulo int, primeSo
 		}
 	}
 
+	var completeGenerationTime time.Duration
+	for x := range timeC {
+		completeGenerationTime += x
+	}
+
 	completeQuasiprimeList.modulo = modulo
 	completeQuasiprimeList.outFileName = fmt.Sprintf("%s/quasiprimes.modulo%v.complete_report.txt", outputDir, modulo)
 	completeQuasiprimeList.minIntegerChecked = 0
 	completeQuasiprimeList.maxIntegerChecked = maxNumberToGen
 	completeQuasiprimeList.numIntergersChecked = maxNumberToGen + 1
-	//completeQuasiprimeList.minQuasiprime =
-	//completeQuasiprimeList.maxQuasiprime =
 	completeQuasiprimeList.numQuasiprimes = completeNumQuasiprimes
+	completeQuasiprimeList.quasiprimeGenerationTime = completeGenerationTime
 
 	for y := 0; y < len(completeModuloDataList); y++ {
 		percentage := float64(completeModuloDataList[y].quantity) / float64(completeQuasiprimeList.numQuasiprimes)
@@ -295,6 +303,8 @@ func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, modulo int, primeSo
 	}
 
 	completeQuasiprimeList.quasiprimes = completeQuasiprimes
+	completeQuasiprimeList.minQuasiprime = completeQuasiprimeList.quasiprimes[0].number
+	completeQuasiprimeList.maxQuasiprime = completeQuasiprimeList.quasiprimes[completeQuasiprimeList.numQuasiprimes-1].number
 
 	completePairedModuloDataList := make(map[int]map[int]moduloData, completeQuasiprimeList.modulo)
 	for a := 0; a < modulo; a++ {
@@ -323,6 +333,7 @@ func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, modulo int, primeSo
 	}
 
 	completeQuasiprimeList.writeToFile(false, true)
+	vPrint(v, 0, "####################\nDone\n\n")
 
 	fmt.Println("All done")
 }
