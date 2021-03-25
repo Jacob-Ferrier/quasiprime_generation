@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -8,18 +9,35 @@ func isInteger(a float64) bool {
 	return a == float64(int(a))
 }
 
+// nFactor function takes an candidate input and attempts to factor it into n prime factors recusively
+// this function also utilizes a pregenerated prime list containing all of the necessary primes to validate primality
+// of factors
+// this function takes advantage of the sieve of Eratosthenes to dramatically cutdown on computation time
+// in doing so, results can be very unpredictable for composites which do not have have n prime factors
+// therefore this function is only to be used as a discrete test to see if a composite has n prime factors,
+// it does not render any other accurate details other than a true/false evaluation
 func nFactor(candidate float64, n int, primes map[int]int, factorList []int) []int {
+	fmt.Printf("Candidate: %v\n", candidate)
+
 	if isPrime(candidate, primes) {
 		factorList = append(factorList, int(candidate))
+		fmt.Println("candidate is prime")
 		return factorList
 	}
-	max := int(math.Floor(math.Pow(candidate, (1.0 / float64(n)))))
+
+	if n <= 0 {
+		return factorList //prevent overflow safety step
+	}
+
+	max := int(math.Floor(math.Pow(candidate, (1.0 / float64(n))))) //sieve step, renders unpredictable results when factoring
+	fmt.Printf("max: %v\n", max)
 
 	for i := 0; primes[i] <= max; i++ {
 		result := candidate / float64(primes[i])
 		if isInteger(result) {
 			factorList = append(factorList, primes[i])
 			factorList = nFactor(result, n-1, primes, factorList)
+			break
 		}
 	}
 
