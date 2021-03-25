@@ -4,17 +4,10 @@ import (
 	"math"
 )
 
-func isQuasiprime(candidate int, primes map[int]int) bool {
-	max := int(math.Floor(math.Sqrt(float64(candidate)))) // by the Sieve of Eratosthenes
+func isQuasiprime(candidate int, nQuasiprime int, primes map[int]int) bool {
+	primeFactors := Factor(candidate, nQuasiprime, primes)
 
-	for j := 0; primes[j] <= max; j++ {
-		result := float64(candidate) / float64(primes[j])
-		if isPrime(result, primes) {
-			return true
-		}
-	}
-
-	return false
+	return len(primeFactors) == nQuasiprime
 }
 
 func isPrime(result float64, primes map[int]int) bool {

@@ -24,6 +24,7 @@ type moduloData struct {
 type QuasiprimeList struct {
 	quasiprimes              map[int]quasiprime
 	primes                   map[int]int
+	nQuasiprime              int
 	modulo                   int
 	outFileName              string
 	minIntegerChecked        int
@@ -41,6 +42,7 @@ func (quasiprimeList *QuasiprimeList) print() {
 	fmt.Printf("Quasiprime List\n#######################\n")
 	fmt.Printf("Primes used: %v\n", quasiprimeList.primes)
 	fmt.Printf("Modulo: %v\n", quasiprimeList.modulo)
+	fmt.Printf("Number of Prime Factors in Quasiprimes: %v\n", quasiprimeList.nQuasiprime)
 	fmt.Printf("Out File Name: %v\n", quasiprimeList.outFileName)
 	fmt.Printf("Minimum Integer Checked: %v\n", quasiprimeList.minIntegerChecked)
 	fmt.Printf("Maximum Integer Checked: %v\n", quasiprimeList.maxIntegerChecked)
@@ -74,7 +76,7 @@ func (quasiprimeList *QuasiprimeList) generate() {
 
 	start := time.Now()
 	for candidate := quasiprimeList.minIntegerChecked; candidate <= quasiprimeList.maxIntegerChecked; candidate++ {
-		if isQuasiprime(candidate, quasiprimeList.primes) {
+		if isQuasiprime(candidate, quasiprimeList.nQuasiprime, quasiprimeList.primes) {
 			quasiprimes[len(quasiprimes)] = quasiprime{candidate, candidate % quasiprimeList.modulo}
 		}
 	}
@@ -128,6 +130,8 @@ func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool, complete bool
 		check(err)
 	}
 	_, err = w.WriteString(fmt.Sprintf("#Modulo: %v\n", quasiprimeList.modulo))
+	check(err)
+	_, err = w.WriteString(fmt.Sprintf("#Number of Prime Factors in Quasiprimes: %v\n", quasiprimeList.nQuasiprime))
 	check(err)
 	_, err = w.WriteString(fmt.Sprintf("#Out File Name: %v\n", quasiprimeList.outFileName))
 	check(err)
@@ -189,10 +193,10 @@ func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, singleC chan
 }
 
 // Quasiprimes main generation function, generate quasiprimes up to maxNumberToGen with listSizeCaps
-func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, modulo int, primeSourceFile string, outputDir string, writePrime bool) {
+func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, modulo int, nQuasiprime int, primeSourceFile string, outputDir string, writePrime bool) {
 	// Initialize quasiprime lists
 	vPrint(v, 0, "Initializing quasiprime lists\n####################\n")
-	lists := makeIntitialLists(maxNumberToGen, listSizeCap, modulo, outputDir)
+	lists := makeIntitialLists(maxNumberToGen, listSizeCap, modulo, nQuasiprime, outputDir)
 	vPrint(v, 0, "####################\nDone\n\n")
 
 	// Make master prime list

@@ -19,6 +19,7 @@ func main() {
 	var maxNumberToGenFlag = flag.Int("maxNumberToGen", 100, "maximum number (not quantity) to generate up to")
 	var listSizeCapFlag = flag.Int("listSizeCap", 101, "maximum size of a quasiprime list, set listSizeCap to maxNumberToGen+1 for a single list")
 	var moduloFlag = flag.Int("modulo", 4, "number to modulate by")
+	var nQuasiprimeFlag = flag.Int("nQuaisiprime", 2, "number of prime factors in quasiprimes")
 	var primeSourceFileFlag = flag.String("primeSourceFile", "", "full path to the prime source file")
 	var outputDirFlag = flag.String("outputDir", "", "full path to output dir")
 	var writePrimeFlag = flag.Bool("writePrime", false, "write primes used during computation to output files")
@@ -27,5 +28,5 @@ func main() {
 	flag.Parse()
 
 	// main runtime
-	generate.Quasiprimes(*vFlag, *maxNumberToGenFlag, *listSizeCapFlag, *moduloFlag, *primeSourceFileFlag, *outputDirFlag, *writePrimeFlag)
+	generate.Quasiprimes(*vFlag, *maxNumberToGenFlag, *listSizeCapFlag, *moduloFlag, *nQuasiprimeFlag, *primeSourceFileFlag, *outputDirFlag, *writePrimeFlag)
 }
