@@ -89,3 +89,9 @@ func makeMasterPrimeList(maxNumberToGen int, primeSourceFile string) map[int]int
 
 	return masterPrimeList
 }
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
