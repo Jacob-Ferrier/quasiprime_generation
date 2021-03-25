@@ -35,9 +35,3 @@ func contains(value int, primes map[int]int) bool {
 
 	return false
 }
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
