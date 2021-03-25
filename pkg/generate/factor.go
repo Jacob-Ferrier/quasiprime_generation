@@ -1,7 +1,6 @@
 package generate
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -17,11 +16,8 @@ func isInteger(a float64) bool {
 // therefore this function is only to be used as a discrete test to see if a composite has n prime factors,
 // it does not render any other accurate details other than a true/false evaluation
 func nFactor(candidate float64, n int, startingPrimeIndex int, primes map[int]int, factorList []int) []int {
-	fmt.Printf("Candidate: %v\n", candidate)
-
 	if isPrime(candidate, primes) {
 		factorList = append(factorList, int(candidate))
-		fmt.Println("candidate is prime")
 		return factorList
 	}
 
