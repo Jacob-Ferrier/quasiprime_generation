@@ -35,7 +35,7 @@ func makeIntitialLists(maxNumberToGen int, listSizeCap int, modulo int, nQuasipr
 
 		quasiprimeList.minIntegerChecked = i * listSizeCap
 		quasiprimeList.numIntergersChecked = quasiprimeList.maxIntegerChecked - quasiprimeList.minIntegerChecked + 1
-		quasiprimeList.outFileName = fmt.Sprintf("%s/quasiprimes.modulo%v.part.%016d.txt", outputDir, modulo, i)
+		quasiprimeList.outFileName = fmt.Sprintf("%s/%v-quasiprimes.modulo%v.part.%016d.txt", outputDir, nQuasiprime, modulo, i)
 		quasiprimeList.modulo = modulo
 		quasiprimeList.nQuasiprime = nQuasiprime
 
