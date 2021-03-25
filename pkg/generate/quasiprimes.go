@@ -256,6 +256,7 @@ func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, modulo int, nQuasip
 	}
 
 	completeQuasiprimeList.modulo = modulo
+	completeQuasiprimeList.nQuasiprime = nQuasiprime
 	completeQuasiprimeList.outFileName = fmt.Sprintf("%s/quasiprimes.modulo%v.complete_report.txt", outputDir, modulo)
 	completeQuasiprimeList.minIntegerChecked = 0
 	completeQuasiprimeList.maxIntegerChecked = maxNumberToGen

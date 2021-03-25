@@ -16,7 +16,7 @@ func isInteger(a float64) bool {
 // in doing so, results can be very unpredictable for composites which do not have have n prime factors
 // therefore this function is only to be used as a discrete test to see if a composite has n prime factors,
 // it does not render any other accurate details other than a true/false evaluation
-func nFactor(candidate float64, n int, primes map[int]int, factorList []int) []int {
+func nFactor(candidate float64, n int, startingPrimeIndex int, primes map[int]int, factorList []int) []int {
 	fmt.Printf("Candidate: %v\n", candidate)
 
 	if isPrime(candidate, primes) {
@@ -29,16 +29,20 @@ func nFactor(candidate float64, n int, primes map[int]int, factorList []int) []i
 		return factorList //prevent overflow safety step
 	}
 
-	max := int(math.Floor(math.Pow(candidate, (1.0 / float64(n))))) //sieve step, renders unpredictable results when factoring
-	fmt.Printf("max: %v\n", max)
+	temp := math.Pow(candidate, (1.0 / float64(n))) //sieve of Eratosthenes step, renders unpredictable results when factoring
+	max := int(math.Floor(temp))
+	if math.Pow(math.Ceil(temp), float64(n)) == candidate {
+		max = int(math.Ceil(temp))
+	}
 
-	for i := 0; primes[i] <= max; i++ {
+	for i := startingPrimeIndex; primes[i] <= max; i++ {
 		result := candidate / float64(primes[i])
 		if isInteger(result) {
 			factorList = append(factorList, primes[i])
-			factorList = nFactor(result, n-1, primes, factorList)
+			factorList = nFactor(result, n-1, 0, primes, factorList)
 			break
 		}
+
 	}
 
 	return factorList
@@ -46,7 +50,7 @@ func nFactor(candidate float64, n int, primes map[int]int, factorList []int) []i
 
 func Factor(candidate int, n int, primes map[int]int) []int {
 	var factorList []int
-	factorList = nFactor(float64(candidate), n, primes, factorList)
+	factorList = nFactor(float64(candidate), n, 0, primes, factorList)
 
 	return factorList
 

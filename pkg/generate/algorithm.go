@@ -7,7 +7,12 @@ import (
 func isQuasiprime(candidate int, nQuasiprime int, primes map[int]int) bool {
 	primeFactors := Factor(candidate, nQuasiprime, primes)
 
-	return len(primeFactors) == nQuasiprime
+	temp := 1
+	for _, p := range primeFactors {
+		temp *= p
+	}
+
+	return len(primeFactors) == nQuasiprime && temp == candidate
 }
 
 func isPrime(result float64, primes map[int]int) bool {
