@@ -195,16 +195,14 @@ func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool, complete bool
 	w.Flush()
 }
 
-func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, singleC chan map[int]moduloData, quasiprimeC chan map[int]int, timeC chan time.Duration, wg *sync.WaitGroup) {
+func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, quasiprimeListChannel chan QuasiprimeList, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	fmt.Printf("Worker %d starting\n", id)
 	quasiprimeList.generate()
 	quasiprimeList.writeToFile(writePrime, true)
 	fmt.Printf("Worker %d done\n", id)
-	//singleC <- quasiprimeList.moduloDataList
-	//quasiprimeC <- quasiprimeList.quasiprimes
-	//timeC <- quasiprimeList.quasiprimeGenerationTime
+	quasiprimeListChannel <- quasiprimeList
 }
 
 // Quasiprimes main generation function, generate quasiprimes up to maxNumberToGen with listSizeCaps
@@ -213,11 +211,13 @@ func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, moduloMax int, nQua
 	vPrint(v, 0, "Initializing quasiprime lists\n####################\n")
 	lists := makeIntitialLists(maxNumberToGen, listSizeCap, moduloMax, nQuasiprime, outputDir)
 	vPrint(v, 0, "####################\nDone\n\n")
+	/////////////////////////////////////
 
 	// Make master prime list
 	vPrint(v, 0, "Preloading prime list\n####################\n")
 	masterPrimeList := makeMasterPrimeList(maxNumberToGen, primeSourceFile)
 	vPrint(v, 0, "####################\nDone\n\n")
+	/////////////////////////////////////
 
 	// Make individual prime lists
 	vPrint(v, 0, "Computing individual prime lists\n####################\n")
@@ -227,31 +227,30 @@ func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, moduloMax int, nQua
 		lists[l] = quasiprimeListToOperate
 	}
 	vPrint(v, 0, "####################\nDone\n\n")
+	/////////////////////////////////////
 
 	// Perform distributed computations
 	vPrint(v, 0, "Distributing workloads to workers and deploying\n####################\n")
-	var wg sync.WaitGroup
 
-	singleC := make(chan map[int]moduloData, len(lists))
-	quasiprimeC := make(chan map[int]int, len(lists))
-	timeC := make(chan time.Duration, len(lists))
+	var wg sync.WaitGroup
+	quasiprimeListChannel := make(chan QuasiprimeList, len(lists))
 	for j := 0; j < len(lists); j++ {
 		wg.Add(1)
-		go worker(j, lists[j], writePrime, singleC, quasiprimeC, timeC, &wg)
+		go worker(j, lists[j], writePrime, quasiprimeListChannel, &wg)
 	}
 
 	wg.Wait()
 	vPrint(v, 0, "All workers reported completion\n")
-	close(singleC)
-	close(quasiprimeC)
-	close(timeC)
+	close(quasiprimeListChannel)
 	vPrint(v, 0, "All channels closed\n")
 	vPrint(v, 0, "####################\nDone\n\n")
+	/////////////////////////////////////
 
 	// Generate report
 	vPrint(v, 0, "Generating final report\n####################\n")
-
+	report(maxNumberToGen, listSizeCap, moduloMax, nQuasiprime, outputDir, quasiprimeListChannel)
 	vPrint(v, 0, "####################\nDone\n\n")
+	/////////////////////////////////////
 
 	fmt.Println("All done")
 }

@@ -58,7 +58,6 @@ func makeIntitialLists(maxNumberToGen int, listSizeCap int, moduloMax int, nQuas
 				}
 			}
 		}
-
 		quasiprimeList.pairedModuloDataList = pairedModuloDataList
 
 		lists[i] = quasiprimeList
