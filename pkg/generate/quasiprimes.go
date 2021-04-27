@@ -14,7 +14,6 @@ type quasiprime struct {
 	moduloResult int
 }
 
-// Random change
 type moduloData struct {
 	quantity   int
 	percentage float64
@@ -25,7 +24,7 @@ type QuasiprimeList struct {
 	quasiprimes              map[int]quasiprime
 	primes                   map[int]int
 	nQuasiprime              int
-	modulo                   int
+	moduloMax                int
 	outFileName              string
 	minIntegerChecked        int
 	maxIntegerChecked        int
@@ -33,15 +32,15 @@ type QuasiprimeList struct {
 	minQuasiprime            int
 	maxQuasiprime            int
 	numQuasiprimes           int
-	moduloDataList           map[int]moduloData
-	pairedModuloDataList     map[int]map[int]moduloData
+	moduloDataList           map[int]map[int]moduloData
+	pairedModuloDataList     map[int]map[int]map[int]moduloData
 	quasiprimeGenerationTime time.Duration
 }
 
 func (quasiprimeList *QuasiprimeList) print() {
 	fmt.Printf("Quasiprime List\n#######################\n")
 	fmt.Printf("Primes used: %v\n", quasiprimeList.primes)
-	fmt.Printf("Modulo: %v\n", quasiprimeList.modulo)
+	fmt.Printf("Modulating up to: %v\n", quasiprimeList.moduloMax)
 	fmt.Printf("Number of Prime Factors in Quasiprimes: %v\n", quasiprimeList.nQuasiprime)
 	fmt.Printf("Out File Name: %v\n", quasiprimeList.outFileName)
 	fmt.Printf("Minimum Integer Checked: %v\n", quasiprimeList.minIntegerChecked)
@@ -129,7 +128,7 @@ func (quasiprimeList *QuasiprimeList) writeToFile(writePrime bool, complete bool
 		_, err = w.WriteString(fmt.Sprintf("#Primes used: %v\n", quasiprimeList.primes))
 		check(err)
 	}
-	_, err = w.WriteString(fmt.Sprintf("#Modulo: %v\n", quasiprimeList.modulo))
+	_, err = w.WriteString(fmt.Sprintf("#Modulating up to: %v\n", quasiprimeList.modulo))
 	check(err)
 	_, err = w.WriteString(fmt.Sprintf("#Number of Prime Factors in Quasiprimes: %v\n", quasiprimeList.nQuasiprime))
 	check(err)
@@ -193,10 +192,10 @@ func worker(id int, quasiprimeList QuasiprimeList, writePrime bool, singleC chan
 }
 
 // Quasiprimes main generation function, generate quasiprimes up to maxNumberToGen with listSizeCaps
-func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, modulo int, nQuasiprime int, primeSourceFile string, outputDir string, writePrime bool) {
+func Quasiprimes(v int, maxNumberToGen int, listSizeCap int, moduloMax int, nQuasiprime int, primeSourceFile string, outputDir string, writePrime bool) {
 	// Initialize quasiprime lists
 	vPrint(v, 0, "Initializing quasiprime lists\n####################\n")
-	lists := makeIntitialLists(maxNumberToGen, listSizeCap, modulo, nQuasiprime, outputDir)
+	lists := makeIntitialLists(maxNumberToGen, listSizeCap, moduloMax, nQuasiprime, outputDir)
 	vPrint(v, 0, "####################\nDone\n\n")
 
 	// Make master prime list

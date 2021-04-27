@@ -16,7 +16,7 @@ func vPrint(verbosity int, minimum int, message string, args ...interface{}) {
 	}
 }
 
-func makeIntitialLists(maxNumberToGen int, listSizeCap int, modulo int, nQuasiprime int, outputDir string) map[int]QuasiprimeList {
+func makeIntitialLists(maxNumberToGen int, listSizeCap int, moduloMax int, nQuasiprime int, outputDir string) map[int]QuasiprimeList {
 	numLists := int(math.Ceil(float64(maxNumberToGen) / float64(listSizeCap)))
 	if numLists == maxNumberToGen/listSizeCap {
 		numLists++
@@ -35,23 +35,30 @@ func makeIntitialLists(maxNumberToGen int, listSizeCap int, modulo int, nQuasipr
 
 		quasiprimeList.minIntegerChecked = i * listSizeCap
 		quasiprimeList.numIntergersChecked = quasiprimeList.maxIntegerChecked - quasiprimeList.minIntegerChecked + 1
-		quasiprimeList.outFileName = fmt.Sprintf("%s/%v-quasiprimes.modulo%v.part.%016d.txt", outputDir, nQuasiprime, modulo, i)
-		quasiprimeList.modulo = modulo
+		quasiprimeList.outFileName = fmt.Sprintf("%s/%v-quasiprimes.moduloMax%v.part.%016d.txt", outputDir, nQuasiprime, moduloMax, i)
+		quasiprimeList.moduloMax = moduloMax
 		quasiprimeList.nQuasiprime = nQuasiprime
 
-		moduloDataList := make(map[int]moduloData, modulo)
-		for p := 0; p < modulo; p++ {
-			moduloDataList[p] = moduloData{}
+		moduloDataList := make(map[int]map[int]moduloData, moduloMax-1)
+		for m := 2; m <= moduloMax; m++ {
+			moduloDataList[m] = make(map[int]moduloData, m)
+			for p := 0; p < m; p++ {
+				moduloDataList[m][p] = moduloData{}
+			}
 		}
 		quasiprimeList.moduloDataList = moduloDataList
 
-		pairedModuloDataList := make(map[int]map[int]moduloData, modulo)
-		for a := 0; a < modulo; a++ {
-			pairedModuloDataList[a] = make(map[int]moduloData, modulo)
-			for b := 0; b < modulo; b++ {
-				pairedModuloDataList[a][b] = moduloData{}
+		pairedModuloDataList := make(map[int]map[int]map[int]moduloData, moduloMax-1)
+		for m := 2; m <= moduloMax; m++ {
+			pairedModuloDataList[m] = make(map[int]map[int]moduloData, m)
+			for a := 0; a < m; a++ {
+				pairedModuloDataList[m][a] = make(map[int]moduloData, m)
+				for b := 0; b < m; b++ {
+					pairedModuloDataList[m][a][b] = moduloData{}
+				}
 			}
 		}
+
 		quasiprimeList.pairedModuloDataList = pairedModuloDataList
 
 		lists[i] = quasiprimeList
