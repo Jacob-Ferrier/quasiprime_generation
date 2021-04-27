@@ -7,7 +7,7 @@ func report(maxNumberToGen int, listSizeCap int, moduloMax int, nQuasiprime int,
 
 	completeQuasiprimeList.moduloMax = moduloMax
 	completeQuasiprimeList.nQuasiprime = nQuasiprime
-	completeQuasiprimeList.outFileName = fmt.Sprintf("%s/%v-quasiprimes.moduloMax%v.complete_report.txt", outputDir, nQuasiprime, moduloMax)
+	completeQuasiprimeList.outFileName = fmt.Sprintf("%s/%v-quasiprimes.moduloMax%v.numberMax%v.complete_report.txt", outputDir, nQuasiprime, moduloMax, maxNumberToGen)
 	completeQuasiprimeList.minIntegerChecked = 0
 	completeQuasiprimeList.maxIntegerChecked = maxNumberToGen
 	completeQuasiprimeList.numIntergersChecked = maxNumberToGen + 1
